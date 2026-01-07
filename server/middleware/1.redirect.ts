@@ -26,12 +26,26 @@ export default eventHandler(async (event) => {
     }
 
     if (link) {
+      const { turnstileSiteKey } = useRuntimeConfig(event).public
+
+      // Skip Turnstile if not configured
+      if (!turnstileSecretKey || !turnstileSiteKey) {
+        event.context.link = link
+        try {
+          await useAccessLog(event)
+        } catch (error) {
+          console.error('Failed write access log:', error)
+        }
+        const target = redirectWithQuery ? withQuery(link.url, getQuery(event)) : link.url
+        return sendRedirect(event, target, +useRuntimeConfig(event).redirectStatusCode)
+      }
+
       // POST = Turnstile verification
       if (event.method === 'POST') {
         const body = await readBody(event)
         const ip = getHeader(event, 'cf-connecting-ip') || ''
 
-        const result = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        const result: { success: boolean } = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -58,10 +72,8 @@ export default eventHandler(async (event) => {
       }
 
       // GET = Serve Turnstile interstitial
-      const { turnstileSiteKey } = useRuntimeConfig(event).public
-      return new Response(getTurnstileHTML(turnstileSiteKey), {
-        headers: { 'Content-Type': 'text/html' }
-      })
+      setResponseHeader(event, 'Content-Type', 'text/html')
+      return getTurnstileHTML(turnstileSiteKey)
     }
   }
 })
