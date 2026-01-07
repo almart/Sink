@@ -31,9 +31,11 @@ export default defineNuxtConfig({
     caseSensitive: false,
     listQueryLimit: 500,
     disableBotAccessLog: false,
+    turnstileSecretKey: '',
     public: {
       previewMode: '',
       slugDefaultLength: '6',
+      turnstileSiteKey: '',
     },
   },
   routeRules: {
@@ -114,14 +116,7 @@ export default defineNuxtConfig({
     defaultLocale: 'en-US',
   },
   shadcn: {
-    /**
-     * Prefix for all the imported component
-     */
     prefix: '',
-    /**
-     * Directory that the component lives in.
-     * @default "./components/ui"
-     */
     componentDir: './app/components/ui',
   },
 })
